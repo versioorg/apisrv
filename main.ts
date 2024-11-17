@@ -95,7 +95,7 @@ const headers = {
 
 Deno.serve({
   hostname: "0.0.0.0",
-  port: 3001,
+  port: currConJSON.port | 3001,
   cert: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/fullchain13.pem"),
   key: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/privkey13.pem"),
   onListen({ hostname, port }) {
