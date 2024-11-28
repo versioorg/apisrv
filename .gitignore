@@ -192,3 +192,9 @@ config.json
 object
 config
 deno.lock
+
+apisrv_client
+apisrv_object
+apisrv_object_private
+
+apisrv

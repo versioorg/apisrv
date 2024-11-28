@@ -23,9 +23,7 @@ if (currConJSON.objectPath) {
 dynModulesList = currConJSON.dynModulesList;
 
 for (const i in dynModulesList) {
-  const dynModule = await import(
-    objectPath + dynModulesList[i] + ".ts"
-  );
+  const dynModule = await import(objectPath + dynModulesList[i] + ".ts");
   dynModules[dynModulesList[i]] = dynModule.main;
 }
 
@@ -35,27 +33,19 @@ for (const value of ["./tmp", "./queue/todo", "./queue/work", "./queue/done", ".
 
 if (flags.request) {
   try {
-    const todoText = await Deno.readTextFile(
-      `${cwd}/queue/todo/${flags.request}.json`,
-    );
+    const todoText = await Deno.readTextFile(`${cwd}/queue/todo/${flags.request}.json`);
     const todoJson = JSON.parse(todoText);
-    const retCompanyInfo = await dynModules["companyInfoByNip"](
-      undefined,
-      todoJson,
-    );
-    await Deno.writeTextFile(`${cwd}/queue/done/${flags.request}.json`, JSON.stringify({ "result": retCompanyInfo }));
+    const retCompanyInfo = await dynModules["companyInfoByNip"](undefined, todoJson);
+    await Deno.writeTextFile(`${cwd}/queue/done/${flags.request}.json`, JSON.stringify({ result: retCompanyInfo }));
 
     try {
-      await Deno.rename(
-        `${cwd}/queue/todo/${flags.request}.json`,
-        `${cwd}/queue/arch/todo_${flags.request}.json`,
-      );
+      await Deno.rename(`${cwd}/queue/todo/${flags.request}.json`, `${cwd}/queue/arch/todo_${flags.request}.json`);
     } catch (err) {
       console.error(err);
     }
   } catch (e) {
     console.log(e);
-    await Deno.writeTextFile(`${cwd}/queue/done/${flags.request}.json`, JSON.stringify({ "error": e }));
+    await Deno.writeTextFile(`${cwd}/queue/done/${flags.request}.json`, JSON.stringify({ error: e }));
   }
   Deno.exit();
 }
@@ -93,32 +83,36 @@ const headers = {
   "Access-Control-Allow-Credentials": "true",
 };
 
-Deno.serve({
-  hostname: "0.0.0.0",
-  port: currConJSON.port | 3001,
-  cert: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/fullchain13.pem"),
-  key: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/privkey13.pem"),
-  onListen({ hostname, port }) {
-    console.log(`☁  Started on http://${hostname}:${port}/graphql`);
+Deno.serve(
+  {
+    hostname: "0.0.0.0",
+    port: currConJSON.port | 3001,
+    cert: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/fullchain13.pem"),
+    key: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/privkey13.pem"),
+    onListen({ hostname, port }) {
+      console.log(`☁  Started on http://${hostname}:${port}/graphql`);
+    },
   },
-}, async (req: any) => {
-  const { pathname } = new URL(req.url);
+  async (req: any, info: any) => {
+    const { pathname } = new URL(req.url);
+    console.log(`remoteAddr: ${info.remoteAddr.hostname} url: ${req.url} method: ${req.method}`);
 
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { status: 200, headers });
+    if (req.method === "OPTIONS") {
+      return new Response("ok", { status: 200, headers });
+    }
+
+    if (pathname === "/graphql") {
+      let ret = await GraphQLHTTP<Request>({
+        schema,
+        graphiql: true,
+      })(req);
+      ret = new Response(ret.body, { ...ret, headers: { ...ret.headers, ...headers } });
+      return ret;
+    }
+
+    return new Response("Not Found", { status: 404 });
   }
-
-  if (pathname === "/graphql") {
-    let ret = await GraphQLHTTP<Request>({
-      schema,
-      graphiql: true,
-    })(req);
-    ret = new Response(ret.body, { ...ret, headers: { ...ret.headers, ...headers } });
-    return ret;
-  }
-
-  return new Response("Not Found", { status: 404 });
-});
+);
 
 const keyMenu = currConJSON.keyMenu;
 if (keyMenu) {
@@ -133,7 +127,7 @@ if (keyMenu) {
       console.log("* UPO *******************************************************************************");
       console.log("*************************************************************************************");
     }
-    if (event.ctrlKey && event.key === "c" || event.key === "k") {
+    if ((event.ctrlKey && event.key === "c") || event.key === "k") {
       console.log("*************************************************************************************");
       console.log("* Koniec sesji **********************************************************************");
       console.log("*************************************************************************************");
@@ -159,7 +153,7 @@ for await (const event of watcher) {
       for (const i in event.paths) {
         const path = event.paths[i];
         const pathWithoutExt = `${path.replace(".json", "")}`;
-        const time = ((new Date()).toJSON()).replace(/-/g, "").replace(/T/, "_").replace(/Z/, "").replace(/:/g, "").replace(/\./g, "_");
+        const time = new Date().toJSON().replace(/-/g, "").replace(/T/, "_").replace(/Z/, "").replace(/:/g, "").replace(/\./g, "_");
 
         if (path.indexOf(".json") >= 0) {
           await todo(pathWithoutExt, time);
