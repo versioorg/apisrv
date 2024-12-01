@@ -35,7 +35,7 @@ if (flags.request) {
   try {
     const todoText = await Deno.readTextFile(`${cwd}/queue/todo/${flags.request}.json`);
     const todoJson = JSON.parse(todoText);
-    const retCompanyInfo = await dynModules["companyInfoByNip"](undefined, todoJson);
+    const retCompanyInfo = await dynModules[todoJson.method](undefined, todoJson);
     await Deno.writeTextFile(`${cwd}/queue/done/${flags.request}.json`, JSON.stringify({ result: retCompanyInfo }));
 
     try {

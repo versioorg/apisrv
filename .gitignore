@@ -1,6 +1,5 @@
 *.exe
 **/*.exe
-config.json
 ret.json
 queue
 main.exe
@@ -189,7 +188,6 @@ r*.bat
 opis.txt
 package-lock.json
 config.json
-object
 config
 deno.lock
 
@@ -198,3 +196,7 @@ apisrv_object
 apisrv_object_private
 
 apisrv
+photoTag_*
+config_sync.json
+apisrv_object_private
+config_private.json
