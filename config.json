@@ -1,0 +1,16 @@
+{
+  "dynModulesList": ["photo", "auth", "data"],
+  "keyMenu": false,
+  "design": true,
+
+  "instance": {
+    "phototag": {
+      "sender": {
+        "title": "Powiadomienie",
+        "name": "_email_address_",
+        "pass": "_email_password_",
+        "host": "_email_server_"
+      }
+    }
+  }
+}

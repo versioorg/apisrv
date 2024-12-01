@@ -187,7 +187,6 @@ k*.bat
 r*.bat
 opis.txt
 package-lock.json
-config.json
 config
 deno.lock
 
