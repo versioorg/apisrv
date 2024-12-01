@@ -19,6 +19,6 @@ To get started with apisrv, ensure you have [Deno](https://deno.land/) installed
 Clone the repository, then run the application using Deno:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/versioorg/apisrv
 cd apisrv
-deno run --allow-net --allow-read main.ts
+deno -A main.ts
