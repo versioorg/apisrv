@@ -101,8 +101,8 @@ try {
     {
       hostname: "0.0.0.0",
       port: currConJSON.port | 3001,
-      cert: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/fullchain13.pem"),
-      key: currConJSON.design === true ? undefined : await Deno.readTextFile("./cert/privkey13.pem"),
+      cert: currConJSON.design === true ? undefined : await Deno.readTextFile("./config/cert/cert.pem"),
+      key: currConJSON.design === true ? undefined : await Deno.readTextFile("./config/cert/key.pem"),
       onListen({ hostname, port }) {
         console.log(`☁  Started on http://${hostname}:${port}/graphql`);
       },
