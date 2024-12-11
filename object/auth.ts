@@ -4,11 +4,12 @@ import * as modCrypto from "https://deno.land/std@0.211.0/crypto/mod.ts";
 import { format } from "https://deno.land/std@0.224.0/datetime/format.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import currConJSON from "../config.ts";
+import { fileExists } from "./util.ts";
 
 currConJSON.sessionDir = currConJSON.sessionDir || "./config/session";
 currConJSON.userDir = currConJSON.userDir || "./config/user";
 
-async function main(_param: any, param2: any) {
+async function main(_param: any, param2: any, _context: any, _info: any) {
   try {
     console.log(`param2: ${JSON.stringify(param2)}`);
 
@@ -76,6 +77,9 @@ async function main(_param: any, param2: any) {
           } else {
             throw new Error("#userMsg Register error");
           }
+          if (await fileExists(`${currConJSON.userDir}/${param2.params.user}.json`)) {
+            throw new Error("#userMsg Użytkownik jest już zarejestrowany, zaloguj się");
+          }
           const hashNew = await hash(
             { password: param2.params.passNew },
             {
@@ -99,7 +103,7 @@ async function main(_param: any, param2: any) {
           await Deno.mkdir(`${path}/Faktury firma`, { recursive: true });
           await Deno.mkdir(`${path}/Zakupy domowe`, { recursive: true });
 
-          await sendEmail(
+          await sendEmailWithRetry(
             param2.params.user,
             "photoTag: Aktywacja konta",
             `
@@ -124,7 +128,7 @@ async function main(_param: any, param2: any) {
           }
         } catch (e) {
           console.log(e);
-          throw new Error("#userMsg Register error");
+          throw e; //new Error("#userMsg Register error");
         }
 
       case "forgot":
@@ -156,7 +160,7 @@ async function main(_param: any, param2: any) {
 
           await Deno.writeTextFile(`${currConJSON.userDir}/${param2.params.user}.json`, JSON.stringify(userJson, undefined, "  "));
 
-          await sendEmail(param2.params.user, "photoTag: Odzyskanie hasła", `<p>Login: ${param2.params.user}<br /><br /><a href=https://phototag.versio.org/recovery?token=${userJson.passRecoveryToken}&user=${param2.params.user}>Ustaw hasło</a></p>`);
+          await sendEmailWithRetry(param2.params.user, "photoTag: Odzyskanie hasła", `<p>Login: ${param2.params.user}<br /><br /><a href=https://phototag.versio.org/recovery?token=${userJson.passRecoveryToken}&user=${param2.params.user}>Ustaw hasło</a></p>`);
           return { ok: true, info: "ok" };
         } catch (e) {
           console.log(e);
@@ -179,7 +183,7 @@ async function main(_param: any, param2: any) {
 
           await Deno.writeTextFile(`${currConJSON.userDir}/${param2.params.user}.json`, JSON.stringify(userJson, undefined, "  "));
 
-          // await sendEmail(
+          // await sendEmailWithRetry(
           //   param2.params.user,
           //   "photoTag: Odzyskanie hasła",
           //   `
@@ -247,13 +251,12 @@ async function main(_param: any, param2: any) {
           if (userJson.isActivated === true) {
             throw new Error("#userMsg Konto użytkownika jest już aktywne");
           }
-          await sendEmail(
+          await sendEmailWithRetry(
             param2.params.user,
             "photoTag: Aktywacja konta",
             `
                 <p>
                 Aktywacja konta: ${param2.params.user}<br />
-                Token aktywacji: ${userJson.activateToken}<br /><br />
                 <a href=https://phototag.versio.org/activate?token=${userJson.activateToken}&user=${param2.params.user}>Aktywacja automatyczna</a></p>`
           );
           return {
@@ -272,7 +275,7 @@ async function main(_param: any, param2: any) {
         throw new Error("Błąd typu auth");
     }
   } catch (e: any) {
-    console.log(e);
+    console.error("Error in main function:", e);
     //return { "error": true, "info": "error" };
     //throw new Error("Error #987243978");
     if (e.message && String(e).indexOf(`#userMsg`) >= 0) {
@@ -345,6 +348,25 @@ async function hash(requestParams: any, _options: any) {
   hashArray = Array.from(new Uint8Array(h));
   hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   return hashHex;
+}
+
+async function sendEmailWithRetry(user: string, subject: string, html: string, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await sendEmail(user, subject, html);
+      return;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.warn(`Retry ${i + 1}/${retries} failed:`, error.message);
+      } else {
+        console.warn(`Retry ${i + 1}/${retries} failed:`, "Unknown error");
+      }
+      if (i === retries - 1) {
+        throw error; // Rzucamy wyjątek na koniec prób
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1s before retry
+    }
+  }
 }
 
 async function sendEmail(user: string, subject: string, html: string) {

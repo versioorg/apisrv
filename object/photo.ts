@@ -5,6 +5,7 @@ import { walk } from "https://deno.land/std@0.224.0/fs/mod.ts";
 import { sessionCheck } from "./auth.ts";
 import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 import currConJSON from "../config.ts";
+import { fileExists } from "./util.ts";
 
 let downloadInProgress = false;
 async function cron() {
@@ -16,15 +17,20 @@ async function cron() {
   }
   try {
     console.log("Synchronizacja zdjęć: ", new Date().toISOString());
-    const ret = await main(undefined, {
-      params: {
-        type: "sync",
-        user: currConJSON.cron.params.user,
-        sessionId: currConJSON.cron.params.apiKey,
-        cwid: "todo",
-        backend: currConJSON.cron.params.backend,
+    const ret = await main(
+      undefined,
+      {
+        params: {
+          type: "sync",
+          user: currConJSON.cron.params.user,
+          sessionId: currConJSON.cron.params.apiKey,
+          cwid: "todo",
+          backend: currConJSON.cron.params.backend,
+        },
       },
-    });
+      undefined,
+      undefined
+    );
     console.log(ret);
   } catch (e) {
     console.log(e);
@@ -38,7 +44,7 @@ if (currConJSON.cron) {
   setInterval(cron, 5000);
 }
 
-async function main(_param: any, param2: any) {
+async function main(_param: any, param2: any, _context: any, _info: any) {
   try {
     console.log(`photo => ${param2.params.type} => ${JSON.stringify(param2.params)}`);
     if (param2.params.type !== "sync") {
@@ -479,19 +485,6 @@ const graphqlClient = async (query: string, variables?: { email?: string; passwo
     throw error;
   }
 };
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await Deno.lstat(path);
-    return true;
-  } catch (err) {
-    if (!(err instanceof Deno.errors.NotFound)) {
-      throw err;
-    }
-    console.log("not exists!");
-    return false;
-  }
-}
 
 async function createThumbnail(inputPath: string, outputPath: string, maxSize: number) {
   try {

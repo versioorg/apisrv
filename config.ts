@@ -24,7 +24,7 @@ try {
   if (!(err instanceof Deno.errors.NotFound)) {
     throw err;
   }
-  console.log("warning: config.json not exists");
+  console.warn("warning: config.json not exists");
 }
 
 export default currConJSON;
